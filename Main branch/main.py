@@ -2,7 +2,7 @@
 # you need to import sin from math and import all from
 # processing. Also, make sure to call run() at the very
 # end of your python script!
-
+from sense_emu import SenseHat
 # Code by Peter Farrell from his book
 # Math Adventures with Python
 from math import sin
