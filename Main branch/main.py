@@ -1,56 +1,61 @@
-# NOTE: To run processing in the trinket.io environment,
-# you need to import sin from math and import all from
-# processing. Also, make sure to call run() at the very
-# end of your python script!
-from sense_emu import SenseHat
-# Code by Peter Farrell from his book
-# Math Adventures with Python
-from math import sin
-from processing import *
+from sense_hat import SenseHat
+from time import sleep
+from random import randint
 
-# CircleSineWave.pyde
-r1 = 100  # radius of big circle
-r2 = 10  # radius of small circle
-t = 0  # time variable
-circleList = []
+sense = SenseHat()
 
+# Set up initial game state
+bird_position = 4
+bird_velocity = 0
+gravity = 0.1
+jump_strength = -2
+obstacle_position = 7
+obstacle_speed = 0.1
+score = 0
 
-def setup():
-    size(600, 600)
+def display_game_over_message():
+    game_over_msg = "Game Over! Score: {}".format(score)
+    sense.show_message(game_over_msg, text_colour=(255, 0, 0))
 
+# Game loop
+while True:
+    # Read accelerometer data
+    acceleration = sense.get_accelerometer_raw()
+    y_acceleration = acceleration['y']
 
-def draw():
-    global t, circleList
-    background(200)
-    # move to left-center of screen
-    translate(width / 4, height / 2)
-    noFill()  # don't color in the circle
-    stroke(0)  # black outline
-    ellipse(0, 0, 2 * r1, 2 * r1)
+    # Update bird position based on accelerometer data
+    bird_velocity += y_acceleration + gravity
+    bird_position += int(bird_velocity)
 
-    # circling ellipse:
-    fill(255, 0, 0)  # red
-    y = r1 * sin(t)
-    x = r1 * cos(t)
-    # add point to list:
-    circleList.insert(0, y)
-    ellipse(x, y, r2, r2)
-    stroke(0, 255, 0)  # green for the line
-    line(x, y, 200, y)
-    fill(0, 255, 0)  # green for the ellipse
-    ellipse(200, y, 10, 10)
+    # Ensure bird stays within the screen boundaries
+    bird_position = max(0, min(bird_position, 7))
 
-    if len(circleList) > 300:
-        circleList.remove(circleList[-1])
+    # Move obstacle to the left
+    obstacle_position -= obstacle_speed
 
-    # loop over circleList to leave a trail:
-    for i, c in enumerate(circleList):
-        # small circle for trail:
+    # Check for collision with obstacle
+    if obstacle_position <= 0:
+        obstacle_position = 7
+        obstacle_speed = 0.1 + randint(0, 5) / 10.0
+        score += 1
 
-        ellipse(200 + i, c, 5, 5)
+    # Check for collision with bird
+    if int(obstacle_position) == 4 and bird_position == 4:
+        # Game over
+        display_game_over_message()
+        break
 
-    t += 0.05
+    # Create an empty pixel list
+    pixels = [(0, 0, 0)] * 64
 
+    # Set pixel for bird
+    pixels[4 * 8 + bird_position] = (255, 0, 0)
 
-# Remember to call run() at the very end of your script!
-run()
+    # Set pixel for obstacle
+    pixels[int(obstacle_position) * 8 + 7] = (0, 255, 0)
+
+    # Display the pixel list on the Sense HAT
+    sense.set_pixels(pixels)
+
+    # Pause for a short duration
+    sleep(0.1)
